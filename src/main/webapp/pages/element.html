@@ -1,0 +1,458 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>CBAS Benchmark - Qiao vs CBAS-DSH</title>
+
+    <style>
+        * {
+            box-sizing: border-box;
+        }
+
+        body {
+            margin: 0;
+            background: #f3f4f6;
+            font-family: Arial, Helvetica, sans-serif;
+            color: #1f2937;
+        }
+
+        .wrapper {
+            width: 96%;
+            max-width: 1200px;
+            margin: 10px auto 24px;
+        }
+
+        .top-header {
+            background: #17172d;
+            color: white;
+            text-align: center;
+            font-weight: bold;
+            padding: 10px 0;
+            font-size: 18px;
+            letter-spacing: 0.3px;
+            border-radius: 2px;
+            margin-bottom: 10px;
+        }
+
+        .grid {
+            display: grid;
+            grid-template-columns: 1fr;
+            gap: 12px;
+        }
+
+        .card {
+            background: #ffffff;
+            border: 1px solid #d7dce3;
+            border-radius: 10px;
+            padding: 18px;
+            box-shadow: 0 2px 8px rgba(15, 23, 42, 0.06);
+        }
+
+        .card.dsh {
+            background: #effdf4;
+            border-color: #9be7bd;
+        }
+
+        .card-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            gap: 12px;
+            margin-bottom: 14px;
+        }
+
+        .card-title {
+            font-weight: 700;
+            font-size: 18px;
+        }
+
+        .button-group {
+            display: flex;
+            gap: 10px;
+            flex-wrap: wrap;
+            justify-content: flex-end;
+        }
+
+        .btn {
+            min-width: 145px;
+            height: 48px;
+            border: none;
+            border-radius: 6px;
+            color: white;
+            font-size: 14px;
+            font-weight: 700;
+            cursor: pointer;
+        }
+
+        .btn-blue {
+            background: #1778ff;
+        }
+
+        .btn-green {
+            background: #11884a;
+        }
+
+        .btn:hover {
+            opacity: 0.9;
+        }
+
+        .result-box {
+            background: #e9edf2;
+            border-radius: 8px;
+            border: 1px solid #dde3ea;
+            min-height: 160px;
+            padding: 18px;
+            font-family: "Courier New", monospace;
+            font-size: 13px;
+            line-height: 1.45;
+            white-space: pre-wrap;
+            overflow-x: auto;
+            color: #111827;
+        }
+
+        .meta {
+            margin-top: 10px;
+            font-family: "Courier New", monospace;
+            font-size: 12px;
+            color: #4b5563;
+        }
+
+        .improvement {
+            margin-top: 8px;
+            font-family: "Courier New", monospace;
+            font-size: 12px;
+            color: #047857;
+            font-weight: 700;
+        }
+
+        .legend {
+            display: flex;
+            gap: 16px;
+            flex-wrap: wrap;
+            align-items: center;
+            font-size: 12px;
+            margin-top: 12px;
+            padding: 10px 12px;
+            background: #ffffff;
+            border: 1px solid #e5e7eb;
+            border-radius: 8px;
+        }
+
+        .legend-item {
+            display: flex;
+            align-items: center;
+            gap: 6px;
+        }
+
+        .legend-color {
+            width: 28px;
+            height: 10px;
+            border-radius: 2px;
+        }
+
+        .orange {
+            background: #f59e0b;
+        }
+
+        .blue {
+            background: #60a5fa;
+        }
+
+        @media (max-width: 760px) {
+            .card-header {
+                align-items: flex-start;
+                flex-direction: column;
+            }
+
+            .button-group {
+                width: 100%;
+                justify-content: flex-start;
+            }
+
+            .btn {
+                flex: 1;
+                min-width: 130px;
+            }
+
+            .result-box {
+                font-size: 12px;
+            }
+        }
+    </style>
+</head>
+
+<body>
+
+<div class="wrapper">
+    <div class="top-header">CBAS Benchmark - Qiao vs CBAS-DSH</div>
+
+    <div class="grid">
+        <div class="card">
+            <div class="card-header">
+                <div class="card-title">Qiao et al. CBAS (JPBC)</div>
+
+                <div class="button-group">
+                    <button class="btn btn-blue" onclick="signQiao()">Sign-Qiao</button>
+                    <button class="btn btn-green" onclick="verifyQiao()">Verify-Qiao</button>
+                </div>
+            </div>
+
+            <div id="result-qiao" class="result-box">[Qiao Output]
+Click Sign-Qiao or Verify-Qiao.</div>
+
+            <div id="meta-qiao" class="meta">
+Mean over this browser session: sign-qiao = - ms | verify-qiao = - ms
+            </div>
+        </div>
+
+        <div class="card dsh">
+            <div class="card-header">
+                <div class="card-title">CBAS-DSH (JPBC)</div>
+
+                <div class="button-group">
+                    <button class="btn btn-blue" onclick="signDsh()">Sign-DSH</button>
+                    <button class="btn btn-green" onclick="verifyDsh()">Verify-DSH</button>
+                </div>
+            </div>
+
+            <div id="result-dsh" class="result-box">[DSH Output]
+Click Sign-DSH or Verify-DSH.</div>
+
+            <div id="meta-dsh" class="meta">
+Mean over this browser session: sign-dsh = - ms | verify-dsh = - ms
+            </div>
+
+            <div id="improvement" class="improvement">
+Improvement vs Qiao: sign = - | verify = -
+            </div>
+        </div>
+    </div>
+
+    <div class="legend">
+        <div class="legend-item"><span class="legend-color orange"></span> sign-qiao</div>
+        <div class="legend-item"><span class="legend-color blue"></span> sign-dsh</div>
+        <div class="legend-item"><span class="legend-color orange"></span> verify-qiao</div>
+        <div class="legend-item"><span class="legend-color blue"></span> verify-dsh</div>
+    </div>
+</div>
+
+<script src="../js/axios-0.18.0.js"></script>
+
+<script>
+    const baseUrl = window.location.origin + "/scheme/vehicle";
+
+    const payload = {
+        id: "",
+        name: "vehicle-01",
+        pk1: "public-key-1",
+        pk2: "public-key-2",
+        sk1: "secret-key-1",
+        sk2: "secret-key-2"
+    };
+
+    const metrics = {
+        signQiao: [],
+        verifyQiao: [],
+        signDsh: [],
+        verifyDsh: []
+    };
+
+    function average(values) {
+        if (!values.length) {
+            return null;
+        }
+
+        const total = values.reduce(function(sum, value) {
+            return sum + value;
+        }, 0);
+
+        return total / values.length;
+    }
+
+    function formatMs(value) {
+        return value === null ? "-" : value.toFixed(2);
+    }
+
+    function improvement(oldValue, newValue) {
+        if (oldValue === null || newValue === null || oldValue === 0) {
+            return "-";
+        }
+
+        const percent = ((newValue - oldValue) / oldValue) * 100;
+
+        return percent.toFixed(1) + "%";
+    }
+
+    function updateMeta() {
+        const signQiaoMean = average(metrics.signQiao);
+        const verifyQiaoMean = average(metrics.verifyQiao);
+        const signDshMean = average(metrics.signDsh);
+        const verifyDshMean = average(metrics.verifyDsh);
+
+        document.getElementById("meta-qiao").textContent =
+            "Mean over this browser session: sign-qiao = " + formatMs(signQiaoMean) +
+            " ms | verify-qiao = " + formatMs(verifyQiaoMean) + " ms";
+
+        document.getElementById("meta-dsh").textContent =
+            "Mean over this browser session: sign-dsh = " + formatMs(signDshMean) +
+            " ms | verify-dsh = " + formatMs(verifyDshMean) + " ms";
+
+        document.getElementById("improvement").textContent =
+            "Improvement vs Qiao: sign = " + improvement(signQiaoMean, signDshMean) +
+            " | verify = " + improvement(verifyQiaoMean, verifyDshMean);
+    }
+
+    function setResult(targetId, text) {
+        document.getElementById(targetId).textContent = text;
+    }
+
+    function stringifyResponse(data) {
+        return JSON.stringify(data, null, 2);
+    }
+
+    function buildOutput(label, method, endpoint, status, elapsed, data) {
+        return "[" + label + "]\n" +
+            "URL: " + method + " " + endpoint + "\n" +
+            "HTTP Status: " + status + "\n" +
+            "Frontend elapsed: " + elapsed.toFixed(2) + " ms\n\n" +
+            "Response:\n" + stringifyResponse(data);
+    }
+
+    function buildError(label, method, endpoint, elapsed, err) {
+        const errorData = err.response ? err.response.data : err.message;
+
+        return "[" + label + " ERROR]\n" +
+            "URL: " + method + " " + endpoint + "\n" +
+            "Frontend elapsed: " + elapsed.toFixed(2) + " ms\n\n" +
+            "Error:\n" + stringifyResponse(errorData);
+    }
+
+    function signQiao() {
+        const endpoint = baseUrl + "/sign-qiao";
+        const start = performance.now();
+
+        setResult("result-qiao", "[Qiao Sign]\nRequesting...\nURL: GET " + endpoint);
+
+        axios.get(endpoint, {
+            headers: {
+                "Accept": "application/json"
+            }
+        }).then(function(res) {
+            const elapsed = performance.now() - start;
+
+            metrics.signQiao.push(elapsed);
+
+            setResult(
+                "result-qiao",
+                buildOutput("Qiao Sign", "GET", endpoint, res.status, elapsed, res.data)
+            );
+
+            updateMeta();
+        }).catch(function(err) {
+            const elapsed = performance.now() - start;
+
+            setResult(
+                "result-qiao",
+                buildError("Qiao Sign", "GET", endpoint, elapsed, err)
+            );
+        });
+    }
+
+    function verifyQiao() {
+        const endpoint = baseUrl + "/verify-qiao";
+        const start = performance.now();
+
+        setResult("result-qiao", "[Qiao Verify]\nRequesting...\nURL: POST " + endpoint);
+
+        axios.post(endpoint, payload, {
+            headers: {
+                "Content-Type": "application/json",
+                "Accept": "application/json"
+            }
+        }).then(function(res) {
+            const elapsed = performance.now() - start;
+
+            metrics.verifyQiao.push(elapsed);
+
+            setResult(
+                "result-qiao",
+                buildOutput("Qiao Verify", "POST", endpoint, res.status, elapsed, res.data)
+            );
+
+            updateMeta();
+        }).catch(function(err) {
+            const elapsed = performance.now() - start;
+
+            setResult(
+                "result-qiao",
+                buildError("Qiao Verify", "POST", endpoint, elapsed, err)
+            );
+        });
+    }
+
+    function signDsh() {
+        const endpoint = baseUrl + "/sign-dsh";
+        const start = performance.now();
+
+        setResult("result-dsh", "[DSH Sign]\nRequesting...\nURL: GET " + endpoint);
+
+        axios.get(endpoint, {
+            headers: {
+                "Accept": "application/json"
+            }
+        }).then(function(res) {
+            const elapsed = performance.now() - start;
+
+            metrics.signDsh.push(elapsed);
+
+            setResult(
+                "result-dsh",
+                buildOutput("DSH Sign", "GET", endpoint, res.status, elapsed, res.data)
+            );
+
+            updateMeta();
+        }).catch(function(err) {
+            const elapsed = performance.now() - start;
+
+            setResult(
+                "result-dsh",
+                buildError("DSH Sign", "GET", endpoint, elapsed, err)
+            );
+        });
+    }
+
+    function verifyDsh() {
+        const endpoint = baseUrl + "/verify-dsh";
+        const start = performance.now();
+
+        setResult("result-dsh", "[DSH Verify]\nRequesting...\nURL: POST " + endpoint);
+
+        axios.post(endpoint, payload, {
+            headers: {
+                "Content-Type": "application/json",
+                "Accept": "application/json"
+            }
+        }).then(function(res) {
+            const elapsed = performance.now() - start;
+
+            metrics.verifyDsh.push(elapsed);
+
+            setResult(
+                "result-dsh",
+                buildOutput("DSH Verify", "POST", endpoint, res.status, elapsed, res.data)
+            );
+
+            updateMeta();
+        }).catch(function(err) {
+            const elapsed = performance.now() - start;
+
+            setResult(
+                "result-dsh",
+                buildError("DSH Verify", "POST", endpoint, elapsed, err)
+            );
+        });
+    }
+</script>
+
+</body>
+</html>
