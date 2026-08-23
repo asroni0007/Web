@@ -1,0 +1,503 @@
+\documentclass[11pt,a4paper]{article}
+\usepackage[margin=24mm]{geometry}
+\usepackage[T1]{fontenc}
+\usepackage{lmodern}
+\usepackage{xcolor}
+\usepackage{hyperref}
+\usepackage{listings}
+\usepackage{enumitem}
+\usepackage{booktabs}
+\usepackage{tabularx}
+\usepackage{fancyhdr}
+\usepackage{lastpage}
+\usepackage{microtype}
+\usepackage{amssymb}
+
+\definecolor{navy}{HTML}{12355B}
+\definecolor{blue}{HTML}{276FBF}
+\definecolor{green}{HTML}{2D7D46}
+\definecolor{lightblue}{HTML}{EEF5FC}
+\definecolor{lightgray}{HTML}{F4F6F8}
+\definecolor{codegray}{HTML}{263238}
+
+\hypersetup{colorlinks=true,linkcolor=navy,urlcolor=blue,pdftitle={CBAS-DSH Comprehensive End-to-End Execution Guide}}
+\setlist{nosep,leftmargin=6mm}
+\setlength{\parindent}{0pt}
+\setlength{\parskip}{5pt}
+\pagestyle{fancy}
+\setlength{\headheight}{14pt}
+\fancyhf{}
+\lhead{CBAS-DSH Reproducibility Package}
+\rhead{End-to-End Execution Guide}
+\cfoot{Page \thepage\ of \pageref{LastPage}}
+\renewcommand{\headrulewidth}{0.4pt}
+
+\lstdefinestyle{terminal}{
+  basicstyle=\ttfamily\small,
+  backgroundcolor=\color{lightgray},
+  frame=single,
+  rulecolor=\color{lightgray},
+  breaklines=true,
+  columns=fullflexible,
+  keepspaces=true,
+  showstringspaces=false,
+  xleftmargin=2mm,
+  xrightmargin=2mm,
+  aboveskip=5pt,
+  belowskip=5pt
+}
+
+\newcommand{\statusbox}[1]{%
+  \begingroup\setlength{\fboxsep}{8pt}%
+  \colorbox{lightblue}{\parbox{0.94\linewidth}{#1}}%
+  \endgroup
+}
+
+\begin{document}
+
+\begin{center}
+  {\color{navy}\Huge\bfseries CBAS-DSH}\par
+  \vspace{2mm}
+  {\Large Software Simulation and Reproducibility Package}\par
+  \vspace{4mm}
+  {\LARGE\bfseries Comprehensive End-to-End Execution Guide}\par
+  \vspace{5mm}
+  {\large From reviewer-safe source release to build, deployment, benchmark, evidence, and cleanup}
+\end{center}
+
+\vspace{3mm}
+\statusbox{\textbf{Build-validated repository state.} The clean Maven workflow completes successfully, executes the automated tests, packages the application, and publishes \texttt{scheme.war} as a downloadable artifact. This statement concerns software build validation and does not claim formal cryptographic verification.}
+
+\tableofcontents
+\newpage
+
+\section{Purpose and verification scope}
+
+This guide provides a complete, reviewer-oriented procedure for inspecting and executing the source code accompanying the CBAS-DSH manuscript. It supports four independent checks:
+
+\begin{enumerate}
+  \item verify the integrity and automated build of the supplied source;
+  \item run the JUnit correctness and tamper-rejection tests;
+  \item deploy the Spring MVC web simulation and call its REST endpoints; and
+  \item reproduce the descriptive statistics reported in Table 6.
+\end{enumerate}
+
+The package compares the baseline CBAS construction attributed to Qiao et al. with the proposed CBAS-DSH construction under the same Spring MVC, JPBC, controller instrumentation, and client conditions.
+
+\section{Before sharing while the manuscript is under review}
+
+Determine the venue's review model before distributing the repository link.
+
+\begin{tabularx}{\linewidth}{@{}p{0.25\linewidth}X@{}}
+\toprule
+\textbf{Review model} & \textbf{Required handling} \\
+\midrule
+Single-anonymous & A named public repository may be used if the venue permits external artifacts. The reviewer already knows the author identity. \\
+Double-anonymous & Use an anonymous repository or upload an anonymous ZIP through the manuscript system. Remove author names, affiliations, personal usernames, e-mail addresses, ORCID identifiers, funding acknowledgments, and identifying commit history. \\
+Unknown & Ask the editor or consult the venue's author guidelines before sharing any identifying URL. \\
+\bottomrule
+\end{tabularx}
+
+Do not include the submitted manuscript PDF, confidential editor correspondence, reviewer comments, rebuttal letters, manuscript number, credentials, or private database configuration in the public code package. The guide uses \texttt{REPOSITORY\_URL} as a neutral placeholder so it can be used in either review model.
+
+\section{End-to-end verification map}
+
+The recommended order is fixed so that failures are isolated early:
+
+\begin{enumerate}
+  \item check review-policy compliance and package structure;
+  \item install and verify Java, Maven, Python, and Tomcat;
+  \item verify the bundled JPBC checksums;
+  \item perform a clean Maven build and automated test run;
+  \item inspect the generated WAR and continuous-integration evidence;
+  \item deploy the WAR to Tomcat 9;
+  \item execute smoke tests against all four reported REST operations;
+  \item repeat the 100-run experiment and retain the new CSV;
+  \item independently analyze the supplied raw CSV to reproduce Table 6;
+  \item archive evidence, record deviations, and cleanly stop the environment.
+\end{enumerate}
+
+\section{Package contents}
+
+\begin{tabularx}{\linewidth}{@{}p{0.37\linewidth}X@{}}
+\toprule
+\textbf{Location} & \textbf{Purpose} \\
+\midrule
+\path{src/main/java/com/abc/service/impl/VehicleServiceImpl.java} & Qiao and CBAS-DSH algorithm implementation \\
+\path{src/main/java/com/abc/controller/VehicleController.java} & REST endpoints and controller-time instrumentation \\
+\path{src/test/java/.../VehicleServiceImplTest.java} & Correctness, tamper, nonce, domain-separation, and PoP tests \\
+\path{src/main/webapp/} & Browser benchmark interface and web configuration \\
+\texttt{benchmark\_cbas.py} & Automated runner and CSV statistics calculator \\
+\texttt{data/raw/table6\_100\_runs.csv} & Raw observations used to reconstruct Table 6 \\
+\texttt{libs/} & Vendored JPBC 2.0.0 modules and SHA-256 checksums \\
+\texttt{THIRD\_PARTY\_LICENSES/} & JPBC LGPL 3.0 license text \\
+\texttt{.github/workflows/build.yml} & Automated clean build, test, and WAR publication \\
+\bottomrule
+\end{tabularx}
+
+Generated directories such as \texttt{target/} and \texttt{\_\_pycache\_\_/} are not part of the reviewed source and should not be committed.
+
+\section{Prerequisites}
+
+\begin{tabularx}{\linewidth}{@{}p{0.32\linewidth}X@{}}
+\toprule
+\textbf{Component} & \textbf{Required configuration} \\
+\midrule
+Java & JDK 17 \\
+Build tool & Apache Maven 3.9 or newer \\
+Web container & Apache Tomcat 9 (Servlet 4 / \texttt{javax.servlet}) \\
+Benchmark client & Python 3.8 or newer; no third-party Python packages required \\
+Network & Access to Maven Central for standard dependencies \\
+\bottomrule
+\end{tabularx}
+
+Tomcat 10 or newer uses the \texttt{jakarta.servlet} namespace and is not compatible with this evaluated Spring MVC 5 configuration without migration. Use Tomcat 9 for direct reproduction.
+
+Confirm the local tools:
+
+\begin{lstlisting}[style=terminal]
+java -version
+mvn -version
+python3 --version
+\end{lstlisting}
+
+\subsection{Install the prerequisites}
+
+On macOS with Homebrew:
+
+\begin{lstlisting}[style=terminal]
+brew install openjdk@17 maven python@3.12
+brew install --cask temurin@17
+\end{lstlisting}
+
+Install Tomcat 9 from the official Apache Tomcat distribution and extract it to a path without unusual permission restrictions. On Ubuntu/Debian, a typical JDK/Maven/Python setup is:
+
+\begin{lstlisting}[style=terminal]
+sudo apt update
+sudo apt install openjdk-17-jdk maven python3 python3-venv
+\end{lstlisting}
+
+On Windows, install a JDK 17 distribution, Apache Maven, Python 3, and Tomcat 9. Add the JDK \texttt{bin}, Maven \texttt{bin}, and Python directories to \texttt{PATH}. Set \texttt{JAVA\_HOME} to the JDK 17 installation, not a JRE.
+
+Verify which Java Maven actually uses:
+
+\begin{lstlisting}[style=terminal]
+mvn -version
+\end{lstlisting}
+
+The output must report Java 17. A different Java version in \texttt{mvn -version} indicates an environment configuration problem even when \texttt{java -version} appears correct.
+
+\section{Obtain the source}
+
+Clone the public repository and enter its root directory:
+
+\begin{lstlisting}[style=terminal]
+git clone REPOSITORY_URL
+cd REPOSITORY_DIRECTORY
+\end{lstlisting}
+
+Alternatively, use GitHub's \textbf{Code $>$ Download ZIP}, extract the archive, and open a terminal in the extracted repository root. The correct root contains \texttt{pom.xml}, \texttt{README.md}, \texttt{src/}, \texttt{libs/}, and \texttt{data/}.
+
+Confirm the package is complete:
+
+\begin{lstlisting}[style=terminal]
+ls -la
+find libs data src/test .github -maxdepth 3 -type f | sort
+\end{lstlisting}
+
+On Windows PowerShell, use \texttt{Get-ChildItem -Recurse}. Do not run Maven from the directory above or below the repository root.
+
+\section{Verify the bundled JPBC libraries}
+
+JPBC 2.0.0 is not reliably available from public Maven repositories. The package therefore vendors only the two modules imported by the implementation: \texttt{jpbc-api} and \texttt{jpbc-plaf}. The GitHub workflow checks them automatically before compiling.
+
+On macOS or Linux, verify them manually from the repository root:
+
+\begin{lstlisting}[style=terminal]
+shasum -a 256 -c libs/SHA256SUMS
+\end{lstlisting}
+
+On Linux systems with GNU Coreutils, the equivalent command is:
+
+\begin{lstlisting}[style=terminal]
+sha256sum --check libs/SHA256SUMS
+\end{lstlisting}
+
+Expected result:
+
+\begin{lstlisting}[style=terminal]
+libs/jpbc-api-2.0.0.jar: OK
+libs/jpbc-plaf-2.0.0.jar: OK
+\end{lstlisting}
+
+The applicable license is retained at \texttt{THIRD\_PARTY\_LICENSES/JPBC-LGPL-3.0.txt}. Maven copies both JARs into \texttt{WEB-INF/lib} in the generated WAR.
+
+\section{Clean build and automated tests}
+
+From the repository root, execute:
+
+\begin{lstlisting}[style=terminal]
+mvn --batch-mode --no-transfer-progress clean verify
+\end{lstlisting}
+
+A successful run ends with \texttt{BUILD SUCCESS} and produces:
+
+\begin{lstlisting}[style=terminal]
+target/scheme.war
+\end{lstlisting}
+
+The \texttt{verify} phase compiles the application, executes the JUnit suite, and creates the deployable WAR. The tests cover valid Qiao and CBAS-DSH signing/verification, aggregate operations, modified-message and modified-signature rejection, deterministic nonce recomputation, domain-separated hashing, and proof-of-possession validation.
+
+Record the Maven summary, including the test count, failures, errors, skipped tests, total time, and final \texttt{BUILD SUCCESS} line. A generated WAR alone is not sufficient evidence if the tests were skipped.
+
+\subsection{Inspect the WAR without deploying it}
+
+A WAR is a ZIP-compatible Java web archive. Verify that it is readable and contains the application classes, web configuration, and both JPBC JARs:
+
+\begin{lstlisting}[style=terminal]
+unzip -t target/scheme.war
+unzip -l target/scheme.war | grep -E \
+  'WEB-INF/(web.xml|classes|lib/jpbc)'
+\end{lstlisting}
+
+On Windows PowerShell, inspect the archive with:
+
+\begin{lstlisting}[style=terminal]
+jar tf target/scheme.war | Select-String "WEB-INF"
+\end{lstlisting}
+
+Do not rename the file to \texttt{.zip} and do not deploy an extracted directory when validating the supplied packaging procedure.
+
+\statusbox{\textbf{Database note.} The four reported cryptographic operations do not query the legacy DAO. A running MySQL server is therefore not required for the build, automated tests, REST benchmark, or Table 6 reconstruction.}
+
+\section{Verify through GitHub Actions}
+
+Every push or pull request invokes \texttt{.github/workflows/build.yml}. A reviewer may open the repository's \textbf{Actions} tab and select the newest \textbf{Build and Test} run. The expected indicators are:
+
+\begin{itemize}
+  \item green \textbf{Success} status;
+  \item successful JPBC checksum verification;
+  \item successful Maven clean verification; and
+  \item one artifact named \texttt{scheme-war} containing \texttt{scheme.war}.
+\end{itemize}
+
+Download the workflow artifact when a local Maven installation is unavailable. GitHub packages downloadable artifacts as ZIP files; extract that download once to obtain \texttt{scheme.war}. Do not extract the WAR itself.
+
+For reproducible reporting, record the commit identifier, workflow run number, workflow status, execution date, Java version, and artifact name. Earlier failed workflow runs may remain visible in history; the evidence relevant to the evaluated source is the successful run associated with the exact commit supplied to reviewers.
+
+\section{Deploy the web simulation on Tomcat 9}
+
+\subsection{Manual deployment}
+
+\begin{enumerate}
+  \item Download and extract Apache Tomcat 9.
+  \item Copy \texttt{target/scheme.war}, or the WAR downloaded from GitHub Actions, into Tomcat's \texttt{webapps/} directory.
+  \item Start Tomcat using the command for the host operating system.
+\end{enumerate}
+
+macOS or Linux:
+
+\begin{lstlisting}[style=terminal]
+cp target/scheme.war /path/to/apache-tomcat-9/webapps/
+/path/to/apache-tomcat-9/bin/startup.sh
+\end{lstlisting}
+
+Windows Command Prompt:
+
+\begin{lstlisting}[style=terminal]
+copy target\scheme.war C:\path\to\apache-tomcat-9\webapps\
+C:\path\to\apache-tomcat-9\bin\startup.bat
+\end{lstlisting}
+
+Wait until Tomcat expands the application, then open:
+
+\begin{lstlisting}[style=terminal]
+http://localhost:8080/scheme/
+\end{lstlisting}
+
+For a foreground run with immediately visible logs on macOS/Linux, use:
+
+\begin{lstlisting}[style=terminal]
+/path/to/apache-tomcat-9/bin/catalina.sh run
+\end{lstlisting}
+
+Keep this terminal open during endpoint and benchmark testing. Use a separate terminal for \texttt{curl} and Python commands.
+
+Stop Tomcat with \texttt{shutdown.sh} on macOS/Linux or \texttt{shutdown.bat} on Windows.
+
+\subsection{Confirm deployment}
+
+The benchmark page should display controls for the Qiao and CBAS-DSH sign/verify operations. If the page does not load, inspect \texttt{logs/catalina.out} on macOS/Linux or the current Tomcat console on Windows.
+
+\section{Call the REST endpoints}
+
+The four operations used for Table 6 are:
+
+\begin{tabularx}{\linewidth}{@{}lllX@{}}
+\toprule
+\textbf{Scheme} & \textbf{Operation} & \textbf{Method} & \textbf{Endpoint} \\
+\midrule
+Qiao & Sign & POST & \texttt{/scheme/vehicle/sign-qiao} \\
+Qiao & Verify & POST & \texttt{/scheme/vehicle/verify-qiao} \\
+CBAS-DSH & Sign & POST & \texttt{/scheme/vehicle/sign-dsh} \\
+CBAS-DSH & Verify & POST & \texttt{/scheme/vehicle/verify-dsh} \\
+\bottomrule
+\end{tabularx}
+
+Example request:
+
+\begin{lstlisting}[style=terminal]
+curl -X POST http://localhost:8080/scheme/vehicle/verify-dsh \
+  -H "Content-Type: application/json" \
+  -d '{"name":"vehicle-01"}'
+\end{lstlisting}
+
+A valid JSON response includes a success code, a true/accepted result, and \texttt{controllerTimeMs}. This backend metric, rather than browser/network elapsed time, is the measurement reported in Table 6.
+
+\subsection{Four-operation smoke test}
+
+Call each reported operation once before starting the 100-run experiment:
+
+\begin{lstlisting}[style=terminal]
+for op in sign-qiao verify-qiao sign-dsh verify-dsh; do
+  curl --fail-with-body -sS -X POST \
+    "http://localhost:8080/scheme/vehicle/$op" \
+    -H "Content-Type: application/json" \
+    -d '{"name":"vehicle-01"}'
+  echo
+done
+\end{lstlisting}
+
+Each request must return HTTP success and a valid application result. Do not begin the measured run if any endpoint returns an error, invalid result, HTML error page, or connection refusal.
+
+\section{Repeat the 100-run experiment}
+
+Keep Tomcat running and execute:
+
+\begin{lstlisting}[style=terminal]
+python3 benchmark_cbas.py \
+  --base-url http://localhost:8080/scheme/vehicle \
+  --runs 100 \
+  --output results.csv
+\end{lstlisting}
+
+The runner invokes the four operations sequentially, writes one CSV row per request, and prints the sample count, mean, median, minimum, maximum, and sample standard deviation. The manuscript protocol uses 100 measured requests per operation with no separate unrecorded warm-up.
+
+Verify the new result file immediately:
+
+\begin{lstlisting}[style=terminal]
+python3 benchmark_cbas.py --analyze results.csv
+wc -l results.csv
+\end{lstlisting}
+
+The CSV should contain one header plus 400 measurement rows when all four operations complete successfully. If any row records a request or validity failure, preserve the file for diagnosis but do not present that run as a successful reproduction.
+
+Results on different hosts may vary because the measured controller path includes JPBC Type A parameter generation, key and certificate setup, signing, verification, JVM behavior, and garbage collection. Preserve the generated CSV and report any changed hardware, JDK, or warm-up configuration.
+
+\section{Reproduce Table 6 without deploying Tomcat}
+
+The supplied raw observations can be analyzed independently:
+
+\begin{lstlisting}[style=terminal]
+python3 benchmark_cbas.py --analyze data/raw/table6_100_runs.csv
+\end{lstlisting}
+
+Expected summary:
+
+\begin{tabularx}{\linewidth}{@{}Xrrrrrr@{}}
+\toprule
+\textbf{Operation} & \textbf{n} & \textbf{Mean} & \textbf{Median} & \textbf{Min} & \textbf{Max} & \textbf{SD} \\
+\midrule
+Sign-Qiao & 100 & 92.24 & 84.50 & 66 & 216 & 27.74 \\
+Verify-Qiao & 100 & 113.08 & 104.00 & 90 & 183 & 21.56 \\
+Sign-DSH & 100 & 100.94 & 95.00 & 81 & 165 & 18.00 \\
+Verify-DSH & 100 & 126.25 & 119.00 & 105 & 275 & 24.61 \\
+\bottomrule
+\end{tabularx}
+
+All times are backend controller execution times in milliseconds. The corresponding mean overhead is 9.43\% for Sign (8.70 ms) and 11.65\% for Verify (13.17 ms).
+
+\section{Evidence package and reporting template}
+
+Retain the following evidence for a complete reviewer record:
+
+\begin{itemize}
+  \item the exact repository commit identifier or immutable source ZIP;
+  \item output of \texttt{java -version}, \texttt{mvn -version}, and \texttt{python3 --version};
+  \item JPBC checksum verification output;
+  \item complete Maven test/build log;
+  \item \texttt{scheme.war} or its workflow artifact reference;
+  \item Tomcat version and deployment log;
+  \item responses from the four smoke-test endpoints;
+  \item the newly generated \texttt{results.csv}; and
+  \item the analyzed output for both the new CSV and supplied Table 6 CSV.
+\end{itemize}
+
+Use the following compact report when communicating a reproduction result:
+
+\begin{lstlisting}[style=terminal]
+Source commit/archive :
+Operating system      :
+Hardware              :
+JDK / Maven / Python  :
+Tomcat                :
+JPBC checksum         : PASS / FAIL
+Maven tests           : PASS / FAIL
+Deployment            : PASS / FAIL
+Four endpoint smoke   : PASS / FAIL
+100-run experiment    : PASS / FAIL
+Table 6 reconstruction: PASS / FAIL
+Deviations/notes      :
+\end{lstlisting}
+
+\section{Stop, clean, and repeat}
+
+After testing, stop Tomcat cleanly. For a completely fresh repetition:
+
+\begin{enumerate}
+  \item stop Tomcat;
+  \item preserve required logs and CSV evidence outside generated directories;
+  \item remove the old deployed \texttt{scheme.war} and expanded \texttt{webapps/scheme/};
+  \item run \texttt{mvn clean};
+  \item rebuild with \texttt{mvn clean verify}; and
+  \item redeploy only the newly generated WAR.
+\end{enumerate}
+
+Never delete the supplied \texttt{data/raw/table6\_100\_runs.csv}, \texttt{libs/}, checksum manifest, license, source files, or the new benchmark CSV intended as evidence.
+
+\section{Troubleshooting}
+
+\begin{tabularx}{\linewidth}{@{}p{0.31\linewidth}X@{}}
+\toprule
+\textbf{Symptom} & \textbf{Resolution} \\
+\midrule
+\texttt{Could not find artifact jpbc-*} & Confirm that \texttt{libs/jpbc-api-2.0.0.jar} and \texttt{libs/jpbc-plaf-2.0.0.jar} exist, then use the supplied \texttt{pom.xml}. Do not replace them with unresolved remote JPBC dependencies. \\
+Checksum failure & Re-download or clone the repository. Do not use a modified JAR. \\
+Java class-version error & Run both Maven and Tomcat with JDK 17. Check \texttt{java -version} and \texttt{mvn -version}. \\
+HTTP 404 for \texttt{/scheme/} & Confirm the WAR is named \texttt{scheme.war}, is inside Tomcat's \texttt{webapps/}, and Tomcat has completed deployment. \\
+Servlet/Jakarta class errors & Use Tomcat 9, not Tomcat 10+. \\
+Port 8080 already in use & Stop the conflicting service or change Tomcat's Connector port in \texttt{conf/server.xml}; update the benchmark base URL accordingly. \\
+Exact times differ & Expected across machines. Verify the operation ordering, 100-run count, zero warm-up, JDK, and controller metric. \\
+\bottomrule
+\end{tabularx}
+
+For a clean retry, stop Tomcat, remove the expanded \texttt{webapps/scheme/} directory and old \texttt{scheme.war}, then deploy the newly built WAR.
+
+\section{Reviewer completion checklist}
+
+\begin{itemize}[label=$\Box$]
+  \item The repository root and key source locations were inspected.
+  \item Both JPBC JAR checksums returned \texttt{OK}.
+  \item \texttt{mvn clean verify} ended with \texttt{BUILD SUCCESS}.
+  \item The automated test suite completed without failures.
+  \item \texttt{target/scheme.war} or the GitHub Actions artifact was obtained.
+  \item The application opened at \texttt{http://localhost:8080/scheme/}.
+  \item The four individual REST endpoints returned valid JSON responses.
+  \item A new 100-run CSV was retained, if the live experiment was repeated.
+  \item Analysis of the supplied raw CSV reproduced Table 6 exactly.
+  \item The commit/archive identifier and complete environment were recorded.
+  \item Generated logs and the new 100-run CSV were retained as evidence.
+  \item No author-identifying metadata was exposed when double-anonymous review applied.
+\end{itemize}
+
+\end{document}
