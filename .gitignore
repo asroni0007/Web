@@ -1,0 +1,27 @@
+# Maven build output
+target/
+
+# Python generated files
+__pycache__/
+*.py[cod]
+
+# IDE metadata
+.idea/
+*.iml
+.classpath
+.project
+.settings/
+.vscode/
+
+# Operating-system metadata
+.DS_Store
+Thumbs.db
+
+# Logs and runtime files
+*.log
+*.pid
+
+# Local secrets
+.env
+.env.*
+*.local.properties
