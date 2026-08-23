@@ -20,7 +20,6 @@ The repository is organized so that reviewers can:
 | Inspect Qiao and CBAS-DSH algorithms | `src/main/java/com/abc/service/impl/VehicleServiceImpl.java` |
 | Inspect REST timing instrumentation | `src/main/java/com/abc/controller/VehicleController.java` |
 | Inspect web benchmark interface | `src/main/webapp/pages/element.html` |
-| Inspect correctness and tamper tests | `src/test/java/com/abc/service/impl/VehicleServiceImplTest.java` |
 | Repeat the experiment | `benchmark_cbas.py` |
 | Recalculate Table 6 | `data/raw/table6_100_runs.csv` |
 | Check data provenance | `data/README.md` |
@@ -158,30 +157,6 @@ http://localhost:8080/scheme/
 
 The included GitHub Actions workflow performs the same clean Maven verification
 and uploads the resulting WAR as a workflow artifact.
-
-## Automated correctness tests
-
-Running `mvn clean verify` executes the JUnit test suite in addition to building
-the WAR. The tests exercise both successful and deliberately modified inputs:
-
-| Test category | Expected result |
-|---|---|
-| Qiao individual sign and verify | Accepted |
-| CBAS-DSH individual sign and verify | Accepted |
-| Qiao and CBAS-DSH aggregate operations | Accepted |
-| Qiao message modified after signing | Rejected |
-| CBAS-DSH message modified after signing | Rejected |
-| CBAS-DSH signature scalar modified | Rejected |
-| Aggregate member removed without updating aggregate | Rejected |
-| Identical hash inputs | Identical field element |
-| Different hash-function role or domain | Different field element |
-| Deterministic nonce formula recomputation | Matches stored nonce |
-| Valid PoP equation | Accepted |
-| Modified PoP response | Rejected |
-
-The negative tests call the same internal sign/verify helpers used by the web
-simulation. Reflection is limited to the test source because the simulation's
-internal signature structures are intentionally not exposed as public API.
 
 ## REST endpoints
 
