@@ -14,7 +14,7 @@ public class MybatisConfig {
     @Bean
     public SqlSessionFactoryBean sqlSessionFactoryBean (DataSource dataSource){
         SqlSessionFactoryBean sqlSessionFactoryBean = new SqlSessionFactoryBean();
-        sqlSessionFactoryBean.setTypeAliasesPackage("com.abc.domain");//连接数据库
+        sqlSessionFactoryBean.setTypeAliasesPackage("com.abc.domian");// Legacy package name retained for compatibility.
         sqlSessionFactoryBean.setDataSource(dataSource);
         return sqlSessionFactoryBean;
     }

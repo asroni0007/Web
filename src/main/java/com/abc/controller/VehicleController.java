@@ -52,7 +52,7 @@ public class VehicleController {
      * ==========================================================
      */
 
-    @GetMapping("/sign-qiao")
+    @PostMapping("/sign-qiao")
     public Result signQiao() {
         long start = System.nanoTime();
 
@@ -100,7 +100,7 @@ public class VehicleController {
         return new Result(data, code, message);
     }
 
-    @GetMapping("/signagg-qiao")
+    @PostMapping("/signagg-qiao")
     public Result signAggQiao() {
         long start = System.nanoTime();
 
@@ -126,7 +126,7 @@ public class VehicleController {
         return new Result(data, code, message);
     }
 
-    @GetMapping("/aggverify-qiao")
+    @PostMapping("/aggverify-qiao")
     public Result aggVerifyQiao() {
         long start = System.nanoTime();
 
@@ -158,7 +158,7 @@ public class VehicleController {
      * ==========================================================
      */
 
-    @GetMapping("/sign-dsh")
+    @PostMapping("/sign-dsh")
     public Result signDsh() {
         long start = System.nanoTime();
 
@@ -206,7 +206,7 @@ public class VehicleController {
         return new Result(data, code, message);
     }
 
-    @GetMapping("/signagg-dsh")
+    @PostMapping("/signagg-dsh")
     public Result signAggDsh() {
         long start = System.nanoTime();
 
@@ -232,7 +232,7 @@ public class VehicleController {
         return new Result(data, code, message);
     }
 
-    @GetMapping("/aggverify-dsh")
+    @PostMapping("/aggverify-dsh")
     public Result aggVerifyDsh() {
         long start = System.nanoTime();
 

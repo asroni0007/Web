@@ -236,18 +236,12 @@ Improvement vs Qiao: sign = - | verify = -
     </div>
 </div>
 
-<script src="../js/axios-0.18.0.js"></script>
-
 <script>
     const baseUrl = window.location.origin + "/scheme/vehicle";
 
     const payload = {
         id: "",
-        name: "vehicle-01",
-        pk1: "public-key-1",
-        pk2: "public-key-2",
-        sk1: "secret-key-1",
-        sk2: "secret-key-2"
+        name: "vehicle-01"
     };
 
     const metrics = {
@@ -319,7 +313,7 @@ Improvement vs Qiao: sign = - | verify = -
     }
 
     function buildError(label, method, endpoint, elapsed, err) {
-        const errorData = err.response ? err.response.data : err.message;
+        const errorData = err.data || err.message;
 
         return "[" + label + " ERROR]\n" +
             "URL: " + method + " " + endpoint + "\n" +
@@ -327,13 +321,29 @@ Improvement vs Qiao: sign = - | verify = -
             "Error:\n" + stringifyResponse(errorData);
     }
 
+    async function requestJson(endpoint, options) {
+        const response = await fetch(endpoint, options);
+        const data = await response.json().catch(function() {
+            return {message: "The server did not return JSON."};
+        });
+
+        if (!response.ok) {
+            const error = new Error("HTTP " + response.status);
+            error.data = data;
+            throw error;
+        }
+
+        return {status: response.status, data: data};
+    }
+
     function signQiao() {
         const endpoint = baseUrl + "/sign-qiao";
         const start = performance.now();
 
-        setResult("result-qiao", "[Qiao Sign]\nRequesting...\nURL: GET " + endpoint);
+        setResult("result-qiao", "[Qiao Sign]\nRequesting...\nURL: POST " + endpoint);
 
-        axios.get(endpoint, {
+        requestJson(endpoint, {
+            method: "POST",
             headers: {
                 "Accept": "application/json"
             }
@@ -344,7 +354,7 @@ Improvement vs Qiao: sign = - | verify = -
 
             setResult(
                 "result-qiao",
-                buildOutput("Qiao Sign", "GET", endpoint, res.status, elapsed, res.data)
+                buildOutput("Qiao Sign", "POST", endpoint, res.status, elapsed, res.data)
             );
 
             updateMeta();
@@ -353,7 +363,7 @@ Improvement vs Qiao: sign = - | verify = -
 
             setResult(
                 "result-qiao",
-                buildError("Qiao Sign", "GET", endpoint, elapsed, err)
+                buildError("Qiao Sign", "POST", endpoint, elapsed, err)
             );
         });
     }
@@ -364,11 +374,13 @@ Improvement vs Qiao: sign = - | verify = -
 
         setResult("result-qiao", "[Qiao Verify]\nRequesting...\nURL: POST " + endpoint);
 
-        axios.post(endpoint, payload, {
+        requestJson(endpoint, {
+            method: "POST",
             headers: {
                 "Content-Type": "application/json",
                 "Accept": "application/json"
-            }
+            },
+            body: JSON.stringify(payload)
         }).then(function(res) {
             const elapsed = performance.now() - start;
 
@@ -394,9 +406,10 @@ Improvement vs Qiao: sign = - | verify = -
         const endpoint = baseUrl + "/sign-dsh";
         const start = performance.now();
 
-        setResult("result-dsh", "[DSH Sign]\nRequesting...\nURL: GET " + endpoint);
+        setResult("result-dsh", "[DSH Sign]\nRequesting...\nURL: POST " + endpoint);
 
-        axios.get(endpoint, {
+        requestJson(endpoint, {
+            method: "POST",
             headers: {
                 "Accept": "application/json"
             }
@@ -407,7 +420,7 @@ Improvement vs Qiao: sign = - | verify = -
 
             setResult(
                 "result-dsh",
-                buildOutput("DSH Sign", "GET", endpoint, res.status, elapsed, res.data)
+                buildOutput("DSH Sign", "POST", endpoint, res.status, elapsed, res.data)
             );
 
             updateMeta();
@@ -416,7 +429,7 @@ Improvement vs Qiao: sign = - | verify = -
 
             setResult(
                 "result-dsh",
-                buildError("DSH Sign", "GET", endpoint, elapsed, err)
+                buildError("DSH Sign", "POST", endpoint, elapsed, err)
             );
         });
     }
@@ -427,11 +440,13 @@ Improvement vs Qiao: sign = - | verify = -
 
         setResult("result-dsh", "[DSH Verify]\nRequesting...\nURL: POST " + endpoint);
 
-        axios.post(endpoint, payload, {
+        requestJson(endpoint, {
+            method: "POST",
             headers: {
                 "Content-Type": "application/json",
                 "Accept": "application/json"
-            }
+            },
+            body: JSON.stringify(payload)
         }).then(function(res) {
             const elapsed = performance.now() - start;
 
