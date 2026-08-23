@@ -25,6 +25,8 @@ The repository is organized so that reviewers can:
 | Recalculate Table 6 | `data/raw/table6_100_runs.csv` |
 | Check data provenance | `data/README.md` |
 | Check dependencies and build settings | `pom.xml` |
+| Verify bundled JPBC artifacts | `libs/SHA256SUMS` |
+| Inspect JPBC license | `THIRD_PARTY_LICENSES/JPBC-LGPL-3.0.txt` |
 | Check automated clean build | `.github/workflows/build.yml` |
 
 For a rapid verification of the reported results, reviewers may proceed
@@ -103,6 +105,11 @@ Table 6 uses `controllerTimeMs` only.
 ├── data/
 │   ├── README.md
 │   └── raw/table6_100_runs.csv
+├── libs/
+│   ├── jpbc-api-2.0.0.jar
+│   ├── jpbc-plaf-2.0.0.jar
+│   └── SHA256SUMS
+├── THIRD_PARTY_LICENSES/JPBC-LGPL-3.0.txt
 ├── pom.xml
 └── src/main/
     ├── java/com/abc/
@@ -129,7 +136,13 @@ metadata are excluded from the reviewed source package through `.gitignore`.
 - Maven 3.9 or newer
 - Apache Tomcat 9 or another Servlet 4-compatible container
 - Python 3.8 or newer for the automated benchmark
-- Network access to the Maven repositories declared in `pom.xml`
+- Network access to Maven Central for Spring and the other standard dependencies
+
+JPBC 2.0.0 is no longer reliably resolvable from public Maven repositories.
+For reproducibility, this package includes only the two JPBC modules actually
+imported by the source (`jpbc-api` and `jpbc-plaf`). Their SHA-256 digests are
+recorded in `libs/SHA256SUMS`, their LGPL 3.0 license is retained under
+`THIRD_PARTY_LICENSES/`, and the build copies both JARs into the generated WAR.
 
 The application uses Spring MVC 5 and `javax.servlet`; therefore, Tomcat 9 is
 recommended. Tomcat 10+ uses the `jakarta.servlet` namespace and requires a
@@ -184,7 +197,9 @@ http://localhost:8080/scheme/
 ```
 
 The included GitHub Actions workflow performs the same clean Maven verification
-and uploads the resulting WAR as a workflow artifact.
+and uploads the resulting WAR as a workflow artifact. Before compiling, it
+checks both bundled JPBC JARs against `libs/SHA256SUMS`; a modified or missing
+file therefore fails the workflow explicitly.
 
 ## Automated correctness tests
 
