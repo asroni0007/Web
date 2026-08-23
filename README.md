@@ -20,6 +20,7 @@ The repository is organized so that reviewers can:
 | Inspect Qiao and CBAS-DSH algorithms | `src/main/java/com/abc/service/impl/VehicleServiceImpl.java` |
 | Inspect REST timing instrumentation | `src/main/java/com/abc/controller/VehicleController.java` |
 | Inspect web benchmark interface | `src/main/webapp/pages/element.html` |
+| Inspect correctness and tamper tests | `src/test/java/com/abc/service/impl/VehicleServiceImplTest.java` |
 | Repeat the experiment | `benchmark_cbas.py` |
 | Recalculate Table 6 | `data/raw/table6_100_runs.csv` |
 | Check data provenance | `data/README.md` |
@@ -120,7 +121,7 @@ Table 6 uses `controllerTimeMs` only.
 ```
 
 Generated build output, IDE metadata, local credentials, and operating-system
-metadata are intentionally excluded from the repository.
+metadata are excluded from the reviewed source package through `.gitignore`.
 
 ## Requirements
 
@@ -133,6 +134,33 @@ metadata are intentionally excluded from the repository.
 The application uses Spring MVC 5 and `javax.servlet`; therefore, Tomcat 9 is
 recommended. Tomcat 10+ uses the `jakarta.servlet` namespace and requires a
 migration that is outside the configuration evaluated in the manuscript.
+
+## Original experimental environment
+
+The measurements reported in Table 6 were collected using the following
+software-simulation environment:
+
+| Component | Configuration |
+|---|---|
+| Hardware | MacBook Air with Apple M1 |
+| Memory | 8 GB RAM |
+| Operating system | macOS 13.0 |
+| Java | JDK 17 |
+| Web framework | Spring MVC 5.3.39 |
+| Persistence framework | MyBatis 3.5.16 |
+| Pairing library | JPBC 2.0.0 |
+| Pairing parameters | Type A, `rBits = 160`, `qBits = 512` |
+| Application packaging | Maven WAR deployed with context path `/scheme` |
+| Measured operations | Sign-Qiao, Verify-Qiao, Sign-DSH, Verify-DSH |
+| Independent runs | 100 per operation |
+| Reported metric | Backend `controllerTimeMs` |
+| Warm-up policy | No separate unrecorded warm-up configured in the supplied runner |
+
+Exact latency can vary across machines because pairing-parameter generation,
+JVM behavior, garbage collection, entropy generation, and host load are part of
+the evaluated full controller execution path. Reproduction on different
+hardware should therefore prioritize the relative comparison and retain the
+new raw CSV for inspection.
 
 ## Build instructions
 
@@ -157,6 +185,30 @@ http://localhost:8080/scheme/
 
 The included GitHub Actions workflow performs the same clean Maven verification
 and uploads the resulting WAR as a workflow artifact.
+
+## Automated correctness tests
+
+Running `mvn clean verify` executes the JUnit test suite in addition to building
+the WAR. The tests exercise both successful and deliberately modified inputs:
+
+| Test category | Expected result |
+|---|---|
+| Qiao individual sign and verify | Accepted |
+| CBAS-DSH individual sign and verify | Accepted |
+| Qiao and CBAS-DSH aggregate operations | Accepted |
+| Qiao message modified after signing | Rejected |
+| CBAS-DSH message modified after signing | Rejected |
+| CBAS-DSH signature scalar modified | Rejected |
+| Aggregate member removed without updating aggregate | Rejected |
+| Identical hash inputs | Identical field element |
+| Different hash-function role or domain | Different field element |
+| Deterministic nonce formula recomputation | Matches stored nonce |
+| Valid PoP equation | Accepted |
+| Modified PoP response | Rejected |
+
+The negative tests call the same internal sign/verify helpers used by the web
+simulation. Reflection is limited to the test source because the simulation's
+internal signature structures are intentionally not exposed as public API.
 
 ## REST endpoints
 
@@ -220,8 +272,9 @@ The runner executes the four operations sequentially, records one row per
 request, distinguishes successful and failed/invalid rows, writes the raw CSV,
 and prints n, mean, median, minimum, maximum, and sample standard deviation.
 
-To execute the alternative 1,500-run configuration, use `--runs 1500`. Table 6
-is reproduced with `--runs 100` and the included 400-row dataset.
+The protocol associated with Table 6 uses exactly 100 independent measured
+runs per operation. The runner accepts another positive value for exploratory
+experiments, but such runs are not part of the reported Table 6 dataset.
 
 ## Reproducing Table 6
 
@@ -262,10 +315,11 @@ simulation context. The measured path therefore includes:
 - signing; and
 - for verify endpoints, creation and verification of a valid test signature.
 
-This scope reflects the end-to-end software simulation evaluated by the web
-application. It should not be interpreted as a microbenchmark of a single
-cryptographic primitive. Browser/client elapsed time additionally includes HTTP
-dispatch, JSON processing, networking, and client scheduling.
+This scope is the **full controller execution time for the simulated
+operation** evaluated by the web application. It should not be interpreted as
+an isolated microbenchmark of a single cryptographic primitive.
+Browser/client elapsed time additionally includes HTTP dispatch, JSON
+processing, networking, and client scheduling and is not used in Table 6.
 
 ## Correctness and reproducibility notes
 

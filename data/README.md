@@ -25,6 +25,12 @@ Recalculated `controllerTimeMs` statistics:
 
 These values exactly reproduce the supplied manuscript Table 6.
 
+The reported dataset corresponds to 100 independent measured runs per
+operation using `controllerTimeMs`. The original environment was a MacBook Air
+with Apple M1, 8 GB RAM, macOS 13.0, JDK 17, Spring MVC 5.3.39, MyBatis 3.5.16,
+and JPBC 2.0.0 with Type A 160/512-bit parameters. No separate unrecorded
+warm-up was configured in the supplied benchmark runner.
+
 Other CSV files in the supplemental archive were not integrated: one was a
 30-run UI/demo dataset, one was a second 100-run experiment not used by Table 6,
 and three contained 400 connection-refused failures each. Excluding them avoids

@@ -554,15 +554,7 @@ public class VehicleServiceImpl implements VehicleService {
                 scalarMul(ci, sig.xi)
         );
 
-        Element popLeft = pointMul(ctx.P, zi);
-
-        Element popRight = pointAdd(
-                ctx,
-                Wi,
-                pointMul(sig.Xi, ci)
-        );
-
-        if (!popLeft.isEqual(popRight)) {
+        if (!verifyProofOfPossession(ctx, sig.Xi, Wi, ci, zi)) {
             return null;
         }
 
@@ -898,6 +890,24 @@ public class VehicleServiceImpl implements VehicleService {
                 pointMul(ctx.Ppub, h1)
         );
 
+        return left.isEqual(right);
+    }
+
+
+    /*
+     * Proof-of-Possession verification:
+     *
+     * ziP = Wi + ciXi
+     */
+    private boolean verifyProofOfPossession(
+            SchemeContext ctx,
+            Element Xi,
+            Element Wi,
+            Element ci,
+            Element zi
+    ) {
+        Element left = pointMul(ctx.P, zi);
+        Element right = pointAdd(ctx, Wi, pointMul(Xi, ci));
         return left.isEqual(right);
     }
 
